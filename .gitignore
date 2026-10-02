@@ -216,3 +216,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+source .venv/bin/activate
+sqlfluff --version
+source .venv/bin/activate
+sqlfluff --version
+
+# Data files (download from Kaggle, don't commit)
+data/
+*.csv
+*.zip
+
+# Local environment
+.venv/
+
+.vscode/
