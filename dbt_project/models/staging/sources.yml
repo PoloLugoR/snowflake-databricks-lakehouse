@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: dataco_raw
+    database: dataco
+    schema: raw
+    tables:
+      - name: supply_chain_orders

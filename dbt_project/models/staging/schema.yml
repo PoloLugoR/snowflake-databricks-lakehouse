@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_supply_chain_orders
+    description: "Cleaned DataCo orders: snake_case columns, sensitive columns removed, dates converted."
+    columns:
+      - name: order_item_id
+        description: "One row per item in an order."
+        data_tests:
+          - unique
+          - not_null
+      - name: order_id
+        data_tests:
+          - not_null
+      - name: order_date_dateorders
+        data_tests:
+          - not_null
+      - name: shipping_date_dateorders
+        data_tests:
+          - not_null
