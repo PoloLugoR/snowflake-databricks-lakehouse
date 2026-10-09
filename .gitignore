@@ -230,3 +230,4 @@ data/
 .venv/
 
 .vscode/
+*.parquet
