@@ -50,6 +50,7 @@ Notes on handling it:
 | Warehouse | Snowflake (trial) |
 | Transformation | dbt Core 1.12 with the Snowflake adapter |
 | Lakehouse | Databricks Free Edition: serverless compute, Unity Catalog, Delta Lake |
+| Visualization | Tableau Desktop (free edition), connected to the Databricks gold tables |
 | Languages | SQL (Snowflake and Spark SQL), Python / PySpark |
 | Tooling | Git and GitHub, VS Code, SQLFluff |
 
