@@ -83,3 +83,8 @@ typing-inspection==0.4.4
 typing_extensions==4.16.0
 urllib3==2.8.0
 zipp==4.1.0
+
+numpy==2.5.4
+openpyxl==3.1.5
+pandas==3.1.0
+pyarrow==26.0.0

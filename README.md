@@ -207,6 +207,42 @@ Observations from this project on a small dataset and free tiers, not a benchmar
 
 Both platforms produced identical results from the same logic, which is the main takeaway: the modeling matters more than the engine.
 
+## Python validation and Excel report
+
+`python/validate_and_report.py` validates the flattened gold fact table (grain
+duplicates, nulls, value ranges, profit/sales anomalies) and builds a 9-sheet Excel
+report with pandas and openpyxl:
+
+- KPI summary with live cross-sheet formulas and automatic key findings
+- Market and shipping-mode analysis (margin, late %, loss %, profit rank)
+- Market x shipping-mode late-rate heatmap
+- Monthly trend with month-over-month change and a 3-month moving average
+- Discount-band loss analysis
+- Data quality checks and an exceptions list
+
+Totals, ratios, ranks and moving averages are Excel formulas, so the report can be
+audited and recalculated in Excel. I first tested the checks on synthetic data with
+injected defects (duplicate key, null market, negative sales) before running it on the
+real data.
+
+The fact table is joined to its dimensions in Databricks (LEFT JOINs, row count
+verified at 180,519 before and after) and exported to CSV.
+
+```bash
+pip install -r requirements.txt
+python python/validate_and_report.py --input data/fact_order_items_flat.csv \
+    --output reports/supply_chain_report.xlsx
+```
+
+Sample outputs: [`reports/supply_chain_report.xlsx`](reports/supply_chain_report.xlsx)
+(real data) and [`reports/demo_report.xlsx`](reports/demo_report.xlsx) (synthetic data with
+injected defects, used to test the validations). Open in Excel or Google Sheets.
+
+![Excel summary](docs/images/excel_summary.png)
+![Excel by market](docs/images/excel_by_market.png)
+![Late rate heatmap](docs/images/excel_late_heatmap.png)
+![Monthly trend](docs/images/excel_monthly_trend.png)
+
 ## Lessons learned
 
 - **Type inference differs between platforms.** I now enforce explicit types instead of trusting inference.
