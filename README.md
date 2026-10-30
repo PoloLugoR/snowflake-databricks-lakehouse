@@ -112,6 +112,42 @@ Delivery performance by shipping mode on both platforms:
 
 See [`docs/dialect_differences.md`](docs/dialect_differences.md) for the syntax differences I ran into (`IFF` vs `CASE`, `QUALIFY`, date parsing, time travel, and more).
 
+## Tableau dashboard
+
+![Supply Chain Performance dashboard](docs/images/tableau_dashboard.png)
+
+A one-page dashboard on the same star schema. Tableau connects to the Databricks gold tables through the Databricks connector (ODBC driver, personal access token) and works from an extract, so it doesn't depend on the warehouse being awake.
+
+**The totals match the other two platforms:** 180,519 order items, 3,966,903 profit and 36,784,734 sales.
+
+### What it shows
+
+| View | Result |
+|---|---|
+| Late % by shipping mode | First Class 95.3%, Second Class 76.6%, Same Day 45.7%, Standard Class 38.1%, against a global average of 54.8% |
+| Loss % by discount band | 18.6%, 18.6% and 18.9%: about one item in five loses money at every discount level, so discounts do not explain the losses |
+| Profit by market | Europe 29.48% and LATAM 28.32% of total profit; Pacific Asia 21.62%, USCA 14.23%, Africa 6.35% |
+| Profit by month | Monthly profit with a 3-month moving average |
+
+The sharp drop at the end of the monthly series should be read with care: it may simply be the end of the data, and I confirm it against order counts before attributing it to anything.
+
+### Tableau techniques used
+
+| Technique | Where |
+|---|---|
+| Relationships on the star schema | One fact table related to five dimensions on the `*_key` fields, so measures are not duplicated |
+| Parameter and calculated field | A `Metric` parameter feeds `Selected Metric` (`CASE`), so the market chart switches between profit, sales and items, with a dynamic title |
+| `FIXED` LOD expression | `Overall Late %` drives the reference line; the year filter is added to context so the LOD respects it |
+| Table calculations | Percent of total in the market labels; 3-month moving average on monthly profit |
+| Color with purpose | One highlight color for First Class, gray for the rest |
+| Dashboard action | Clicking a market filters the other views |
+| Extract | A local copy of the data, instead of a live connection |
+
+### Notes
+
+- The workbook is not published: Tableau Desktop Free Edition cannot save to Tableau Public, and the Public edition accepts a limited set of data sources.
+- The data and the workbook file are not in this repo; the screenshot is the evidence.
+
 ## Snowflake features
 
 Script: [`snowflake/04_features_demo.sql`](snowflake/04_features_demo.sql)
@@ -179,12 +215,16 @@ Both platforms produced identical results from the same logic, which is the main
 - **Test access control with secondary roles off**, or the test can pass for the wrong reason.
 - **Prefer key pair authentication** over passwords for tools like dbt.
 - **Reconcile across platforms instead of assuming they agree.** Doing so exposed a precision gap I would not have noticed.
+- **Dashboards on a warehouse need an extract.** The sign-in token expired mid-session, so I used a personal access token and an extract.
+- **A `FIXED` LOD ignores ordinary dimension filters.** Add the filter to context so the calculation respects it.
+- **Check the edition before planning to publish.** Tableau Desktop Free Edition cannot save to Tableau Public.
 
 ## Limitations and next steps
 
 - Small dataset and free tiers, so no performance conclusions.
 - The bridge is a manual file hand-off. In production I would use a native connector or a shared open table format such as Apache Iceberg (not tested here), with an orchestrator.
 - No scheduled pipeline or CI yet. A GitHub Action that lints the SQL is a planned next step.
+- The Tableau dashboard is a screenshot, not a live link, and it uses an extract from Databricks.
 
 ## How to reproduce
 
@@ -193,6 +233,7 @@ Both platforms produced identical results from the same logic, which is the main
 3. Snowflake: run `snowflake/01` to `03` in order, upload the CSV to the stage as described in the scripts, then configure dbt (a `profiles.yml` with key pair authentication, kept outside the repo) and run `dbt build` inside `dbt_project/`.
 4. Databricks: upload the CSV to a Unity Catalog volume and run notebooks `01` to `04`.
 5. Bridge: run `05_export_for_snowflake`, upload the Parquet file to the Snowflake stage, then run `snowflake/06_load_from_databricks.sql`.
+6. Tableau: connect to a Databricks SQL warehouse (server hostname, HTTP path and a personal access token), choose catalog `workspace` and schema `gold`, relate `fct_order_items` to the five dimensions on the `*_key` fields, and create an extract.
 
 No credentials are stored in this repo.
 
