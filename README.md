@@ -53,6 +53,7 @@ Notes on handling it:
 | Visualization | Tableau Desktop (free edition), connected to the Databricks gold tables |
 | Languages | SQL (Snowflake and Spark SQL), Python / PySpark |
 | Tooling | Git and GitHub, VS Code, SQLFluff |
+| Python | pandas, openpyxl: data validation and automated Excel reporting |
 
 ## Repository layout
 
@@ -61,6 +62,8 @@ databricks/        Notebooks: bronze, silver, gold, Delta demos, export, SQL ana
 dbt_project/       dbt models (staging, marts), tests, macros
 snowflake/         Setup, load, feature demos, bridge scripts (run in numeric order)
 sql/analysis/      Five business-question queries for Snowflake
+python/            Data validation and Excel report generator (pandas, openpyxl)
+reports/           Sample Excel outputs: real data and synthetic demo
 docs/              Dialect differences doc and screenshots
 requirements.txt   Python packages
 ```
@@ -254,6 +257,8 @@ injected defects, used to test the validations). Open in Excel or Google Sheets.
 - **Dashboards on a warehouse need an extract.** The sign-in token expired mid-session, so I used a personal access token and an extract.
 - **A `FIXED` LOD ignores ordinary dimension filters.** Add the filter to context so the calculation respects it.
 - **Check the edition before planning to publish.** Tableau Desktop Free Edition cannot save to Tableau Public.
+- **A star-schema fact table holds keys, not labels: reports need the dimensions joined first,
+  and the join must be checked so it does not drop or duplicate rows (180,519 before and after).
 
 ## Limitations and next steps
 
@@ -261,6 +266,8 @@ injected defects, used to test the validations). Open in Excel or Google Sheets.
 - The bridge is a manual file hand-off. In production I would use a native connector or a shared open table format such as Apache Iceberg (not tested here), with an orchestrator.
 - No scheduled pipeline or CI yet. A GitHub Action that lints the SQL is a planned next step.
 - The Tableau dashboard is a screenshot, not a live link, and it uses an extract from Databricks.
+- The Excel report reads a flattened CSV exported manually from Databricks; it is not
+  scheduled or connected to a live source.
 
 ## How to reproduce
 
@@ -270,6 +277,9 @@ injected defects, used to test the validations). Open in Excel or Google Sheets.
 4. Databricks: upload the CSV to a Unity Catalog volume and run notebooks `01` to `04`.
 5. Bridge: run `05_export_for_snowflake`, upload the Parquet file to the Snowflake stage, then run `snowflake/06_load_from_databricks.sql`.
 6. Tableau: connect to a Databricks SQL warehouse (server hostname, HTTP path and a personal access token), choose catalog `workspace` and schema `gold`, relate `fct_order_items` to the five dimensions on the `*_key` fields, and create an extract.
+7. Join the gold fact table with its dimensions in Databricks, export it to CSV as
+   `data/fact_order_items_flat.csv`, and run
+   `python python/validate_and_report.py --input data/fact_order_items_flat.csv`.
 
 No credentials are stored in this repo.
 
