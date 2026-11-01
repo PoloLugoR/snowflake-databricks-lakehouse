@@ -246,6 +246,11 @@ injected defects, used to test the validations). Open in Excel or Google Sheets.
 ![Late rate heatmap](docs/images/excel_late_heatmap.png)
 ![Monthly trend](docs/images/excel_monthly_trend.png)
 
+Automation features: structured logging, a `--fail-on-issues` flag that returns a non-zero
+exit code when a validation fails (so a scheduler or CI job can stop the pipeline), and a
+`pytest` suite in `tests/` (`pytest -q tests`) covering column matching, each validation
+rule, report totals and exit codes.
+
 ## Lessons learned
 
 - **Type inference differs between platforms.** I now enforce explicit types instead of trusting inference.

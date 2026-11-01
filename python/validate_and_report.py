@@ -24,6 +24,7 @@ Totals, ratios, ranks, moving averages and cross-sheet KPIs are live Excel formu
 from __future__ import annotations
 
 import argparse
+import logging
 import re
 import sys
 from datetime import datetime
@@ -54,6 +55,9 @@ ALIASES = {
     "category_name": ["category_name", "category"],
 }
 REQUIRED = ["order_item_key", "market", "shipping_mode", "is_late", "sales", "profit"]
+
+log = logging.getLogger("validate_and_report")
+EXIT_OK, EXIT_ISSUES, EXIT_BAD_INPUT = 0, 1, 2
 
 NAVY = "1F3864"
 HEADER_FILL = PatternFill("solid", fgColor=NAVY)
@@ -519,18 +523,23 @@ def make_demo(n: int = 30000) -> pd.DataFrame:
     df.loc[20, "sales"] = -5.0                                   # injected negative
     return df
 
-
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--input", type=Path, help=".parquet or .csv with the fact table")
     p.add_argument("--output", default=Path("reports/supply_chain_report.xlsx"), type=Path)
     p.add_argument("--show-columns", action="store_true", help="print columns and matches, then exit")
     p.add_argument("--demo", action="store_true", help="use synthetic data (no input file)")
-    a = p.parse_args()
+    p.add_argument("--fail-on-issues", action="store_true",
+                   help="exit with code 1 if any validation check finds issues (for schedulers/CI)")
+    a = p.parse_args(argv)
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
     if a.demo:
         raw, source = make_demo(), "synthetic demo data"
     elif a.input:
+        if not a.input.exists():
+            log.error("Input file not found: %s", a.input)
+            return EXIT_BAD_INPUT
         raw, source = read_raw(a.input), a.input.name
     else:
         p.error("provide --input FILE or --demo")
@@ -541,19 +550,29 @@ def main() -> None:
         print("Matched         :", mapping)
         print("Missing required:", [c for c in REQUIRED if c not in mapping] or "none")
         print("Optional found  :", [c for c in ALIASES if c not in REQUIRED and c in mapping])
-        return
+        return EXIT_OK
     missing = [c for c in REQUIRED if c not in mapping]
     if missing:
-        sys.exit(f"Missing required columns: {missing}. Run with --show-columns and "
-                 f"add your column names to ALIASES at the top of the script.")
+        log.error("Missing required columns: %s. Run with --show-columns and add your "
+                  "column names to ALIASES at the top of the script.", missing)
+        return EXIT_BAD_INPUT
     df = prepare(df)
     masks = build_masks(df)
-    print(f"{len(df):,} rows | matched columns: {mapping}\n")
+    log.info("%s rows loaded from %s", f"{len(df):,}", source)
+    failed = []
     for name, m in masks:
-        print(f"  {'OK    ' if not m.any() else 'REVIEW'} {name}: {int(m.sum()):,}")
+        if m.any():
+            failed.append(name)
+            log.warning("REVIEW %s: %s", name, f"{int(m.sum()):,}")
+        else:
+            log.info("OK     %s", name)
     build_report(df, masks, a.output, source)
-    print(f"\nReport written to {a.output}")
+    log.info("Report written to %s", a.output)
+    if failed and a.fail_on_issues:
+        log.error("%d check(s) found issues: %s", len(failed), "; ".join(failed))
+        return EXIT_ISSUES
+    return EXIT_OK
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
