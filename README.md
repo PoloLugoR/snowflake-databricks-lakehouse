@@ -58,7 +58,7 @@ Notes on handling it:
 ## Repository layout
 
 ```
-databricks/        Notebooks: bronze, silver, gold, Delta demos, export, SQL analysis
+databricks/        Notebooks: bronze, silver, gold, Delta demos, export, SQL analysis, data quality job
 dbt_project/       dbt models (staging, marts), tests, macros
 snowflake/         Setup, load, feature demos, bridge scripts (run in numeric order)
 sql/analysis/      Five business-question queries for Snowflake
@@ -250,6 +250,17 @@ Automation features: structured logging, a `--fail-on-issues` flag that returns 
 exit code when a validation fails (so a scheduler or CI job can stop the pipeline), and a
 `pytest` suite in `tests/` (`pytest -q tests`) covering column matching, each validation
 rule, report totals and exit codes.
+
+## Scheduled data quality job (Databricks)
+
+   `databricks/07_data_quality_job.ipynb` runs 13 checks on the gold star schema (grain
+   duplicates, nulls, ranges, fact keys without a matching dimension row, non-unique dimension
+   keys, expected row count). It is parameterized with widgets and raises an exception when a
+   check fails, so a Databricks Job marks the run as failed. I verified both paths: a normal
+   run succeeds, and a run with a wrong `expected_rows` fails with a clear message.
+
+   ![Job success](docs/images/databricks_job_success.png)
+   ![Job failure test](docs/images/databricks_job_failure_test.png)
 
 ## Lessons learned
 
