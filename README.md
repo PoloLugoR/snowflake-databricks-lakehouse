@@ -259,7 +259,7 @@ rule, report totals and exit codes.
    check fails, so a Databricks Job marks the run as failed. I verified both paths: a normal
    run succeeds, and a run with a wrong `expected_rows` fails with a clear message.
 
-   ![Job success](docs/images/databricks_job_success.png)
+   ![Job success](docs/images/databricks_job_success.jpeg)
    ![Job failure test](docs/images/databricks_job_failure_test.png)
 
 ## Lessons learned
